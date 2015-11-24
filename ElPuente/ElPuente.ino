@@ -1,19 +1,25 @@
-//byte IR1Pin = ;
+//Pins
+//byte distancePin = ;
 byte warningLedPinLeft = 2;
 byte warningLedPinRight = 3;
 
+//Timer
 int millisDelay = 500;
-int previousMillis = 0;
+unsigned long previousMillis = 0;
 
-bool IR1State = false;
-bool IR1LastState = false;
-//bool IR2State = false;
-//bool IR2LastState = false;
-bool bridgeState = true; //false=lowered; true=raised
-bool warningLedState = false;
+//StateTracking
+byte bridgeState = 2; //0=lowered; 1=raising; 2=raised; 3=lowering
+bool warningLedState = false; //true=on
+
+//Distance Sensor
+int distanceThreshold = 1000; //bridge lowers if less than this
+
+//Motor
+//byte motorPin1 = ;
+//byte motorPin2 = ;
 
 void setup() {
-  //pinMode(IR1Pin, OUTPUT);
+//  pinMode(distancePin, OUTPUT);
   pinMode(warningLedPinLeft, OUTPUT);
   pinMode(warningLedPinRight, OUTPUT);
   
@@ -22,26 +28,28 @@ void setup() {
 }
 
 void loop() {
-  //check and store IR sensor 1
-  //check and store IR sensor 2
+  //Check distance sensor
+//  int distance = analogRead(distancePin);
+//  if(distance < distanceThreshold && bridgeState == 0){
+//    bridgeState = 1;
+//  }
+//  if(distance > distanceThreshold && bridgeState == 2){
+//    bridgeState = 3;
+//  }
 
-  if((millis() - previousMillis) > millisDelay){
-    previousMillis = millis();
-    if(bridgeState=true){ //flash the lights
-      if(warningLedState == false){
-        digitalWrite(warningLedPinLeft, HIGH);  
-        digitalWrite(warningLedPinRight, LOW);
-      }
-      else{
-        digitalWrite(warningLedPinLeft, LOW);  
-        digitalWrite(warningLedPinRight, HIGH);        
-      }
-      warningLedState = !warningLedState;
-    }
-    delay(1);
-  }
+//  if(bridgeState == 0 || bridgeState == 2){
+//    digitalWrite(motorPin1, LOW);
+//    digitalWrite(motorPin2, LOW);
+//  }
+//  else if(bridgeState == 1){
+//    digitalWrite(motorPin1, HIGH);
+//    digitalWrite(motorPin2, LOW);
+//  }
+//  else if(bridgeState == 3){
+//    digitalWrite(motorPin1, LOW);
+//    digitalWrite(motorPin2, HIGH);
+//  }
   
-
   //if detection on IR sensor 1 (IR1State != IR1LastState && IR1State == true)
     //raise bridge for x seconds (see how long it takes to raise)
     //bridgeState = true
@@ -50,4 +58,27 @@ void loop() {
     //delay() //wait for train to finish passing
     //lower bridge for x seconds (see how long it takes to lower)
     //bridgeState = false
+
+  //Timer
+  if((millis() - previousMillis) > millisDelay){
+    previousMillis = millis();
+    Serial.println(previousMillis);
+
+    //The bridge is raised
+    if(bridgeState != 0){ //flash the lights
+      //Railroad Lights
+      if(warningLedState == false){
+        digitalWrite(warningLedPinLeft, HIGH);  
+        digitalWrite(warningLedPinRight, LOW);
+        Serial.println("Left!");
+      }
+      else{
+        digitalWrite(warningLedPinLeft, LOW);
+        digitalWrite(warningLedPinRight, HIGH);
+        Serial.println("Right!");
+      }
+      warningLedState = !warningLedState;
+    }
+    Serial.println("---------");
+  }
 }
