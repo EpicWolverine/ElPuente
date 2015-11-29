@@ -1,7 +1,10 @@
+#include <NewPing.h> //A better sensor library. See http://playground.arduino.cc/Code/NewPing
+
 //Pins
-//byte distancePin = ;
-byte warningLedPinLeft = 2;
-byte warningLedPinRight = 3;
+#define warningLedPinLeft  2
+#define warningLedPinRight 4
+#define distanceTrigPin    12
+#define distanceEchoPin    11
 
 //Timer
 int millisDelay = 500;
@@ -12,23 +15,34 @@ byte bridgeState = 2; //0=lowered; 1=raising; 2=raised; 3=lowering
 bool warningLedState = false; //true=on
 
 //Distance Sensor
-int distanceThreshold = 1000; //bridge lowers if less than this
+#define distanceThreshold 1000 //bridge lowers if less than this
+#define distanceMax       200  // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
+NewPing sonar(distanceTrigPin, distanceEchoPin, distanceMax); // NewPing setup of pins and maximum distance.
 
 //Motor
-//byte motorPin1 = ;
-//byte motorPin2 = ;
+//#define motorPin1 
+//#define motorPin2 
 
 void setup() {
-//  pinMode(distancePin, OUTPUT);
+  //PinModes
   pinMode(warningLedPinLeft, OUTPUT);
   pinMode(warningLedPinRight, OUTPUT);
+//  pinMode(motorPin1, OUTPUT);
+//  pinMode(motorPin2, OUTPUT);
+    
+  //Inital conditons
+  digitalWrite(warningLedPinLeft, HIGH);  
+  digitalWrite(warningLedPinRight, HIGH);
   
+  //Serial init
   Serial.begin(9600);
   Serial.println("El Puente!");
 }
 
 void loop() {
   //Check distance sensor
+  Serial.print(getDist());
+  Serial.println(" cm"); 
 //  int distance = analogRead(distancePin);
 //  if(distance < distanceThreshold && bridgeState == 0){
 //    bridgeState = 1;
@@ -79,6 +93,20 @@ void loop() {
       }
       warningLedState = !warningLedState;
     }
+    
     Serial.println("---------");
   }
+}
+
+long getDist(){
+  //This fixes the sensor getting stuck at 0 
+  if(sonar.ping() == 0){
+    pinMode(distanceEchoPin, OUTPUT);
+    digitalWrite(distanceEchoPin, LOW);
+    pinMode(distanceEchoPin, INPUT);
+  }
+  
+  delay(30);
+  
+  return sonar.ping_cm();
 }
