@@ -15,7 +15,7 @@ byte bridgeState = 2; //0=lowered; 1=raising; 2=raised; 3=lowering
 bool warningLedState = false; //true=on
 
 //Distance Sensor
-#define distanceThreshold 1000 //bridge lowers if less than this
+#define distanceThreshold 60 //bridge lowers if less than this (cm)
 #define distanceMax       200  // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
 NewPing sonar(distanceTrigPin, distanceEchoPin, distanceMax); // NewPing setup of pins and maximum distance.
 
@@ -41,15 +41,15 @@ void setup() {
 
 void loop() {
   //Check distance sensor
-  Serial.print(getDist());
-  Serial.println(" cm"); 
-//  int distance = analogRead(distancePin);
-//  if(distance < distanceThreshold && bridgeState == 0){
-//    bridgeState = 1;
-//  }
-//  if(distance > distanceThreshold && bridgeState == 2){
-//    bridgeState = 3;
-//  }
+  int distance = getDist();
+  Serial.print(distance);
+  Serial.println(" cm");
+  if(distance < distanceThreshold && bridgeState == 0){
+    bridgeState = 1;
+  }
+  if(distance > distanceThreshold && bridgeState == 2){
+    bridgeState = 3;
+  }
 
 //  if(bridgeState == 0 || bridgeState == 2){
 //    digitalWrite(motorPin1, LOW);
@@ -98,7 +98,7 @@ void loop() {
   }
 }
 
-long getDist(){
+int getDist(){
   //This fixes the sensor getting stuck at 0 
   if(sonar.ping() == 0){
     pinMode(distanceEchoPin, OUTPUT);
