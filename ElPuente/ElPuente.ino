@@ -20,20 +20,22 @@ bool warningLedState = false; //true=on
 NewPing sonar(distanceTrigPin, distanceEchoPin, distanceMax); // NewPing setup of pins and maximum distance.
 
 //Motor
-//#define motorPin1 
-//#define motorPin2 
-
+#define motorPin1 6
+#define motorPin2 7
+#define enablepin 9
 void setup() {
+ 
   //PinModes
   pinMode(warningLedPinLeft, OUTPUT);
   pinMode(warningLedPinRight, OUTPUT);
-//  pinMode(motorPin1, OUTPUT);
-//  pinMode(motorPin2, OUTPUT);
-    
-  //Inital conditons
-  digitalWrite(warningLedPinLeft, HIGH);  
-  digitalWrite(warningLedPinRight, HIGH);
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+  pinMode(enablepin, OUTPUT);
   
+  //Inital conditons
+  digitalWrite(warningLedPinLeft, HIGH);
+  digitalWrite(warningLedPinRight, HIGH);
+
   //Serial init
   Serial.begin(9600);
   Serial.println("El Puente!");
@@ -44,69 +46,69 @@ void loop() {
   int distance = getDist();
   Serial.print(distance);
   Serial.println(" cm");
-  if(distance < distanceThreshold && bridgeState == 0){
+  if (distance < distanceThreshold && bridgeState == 0) {
     bridgeState = 1;
   }
-  if(distance > distanceThreshold && bridgeState == 2){
+  if (distance > distanceThreshold && bridgeState == 2) {
     bridgeState = 3;
   }
 
-//  if(bridgeState == 0 || bridgeState == 2){
-//    digitalWrite(motorPin1, LOW);
-//    digitalWrite(motorPin2, LOW);
-//  }
-//  else if(bridgeState == 1){
-//    digitalWrite(motorPin1, HIGH);
-//    digitalWrite(motorPin2, LOW);
-//  }
-//  else if(bridgeState == 3){
-//    digitalWrite(motorPin1, LOW);
-//    digitalWrite(motorPin2, HIGH);
-//  }
-  
+  //  if(bridgeState == 0 || bridgeState == 2){
+  //    digitalWrite(motorPin1, LOW);
+  //    digitalWrite(motorPin2, LOW);
+  //  }
+  //  else if(bridgeState == 1){
+  //    digitalWrite(motorPin1, HIGH);
+  //    digitalWrite(motorPin2, LOW);
+  //  }
+  //  else if(bridgeState == 3){
+  //    digitalWrite(motorPin1, LOW);
+  //    digitalWrite(motorPin2, HIGH);
+  //  }
+
   //if detection on IR sensor 1 (IR1State != IR1LastState && IR1State == true)
-    //raise bridge for x seconds (see how long it takes to raise)
-    //bridgeState = true
-  
+  //raise bridge for x seconds (see how long it takes to raise)
+  //bridgeState = true
+
   //if detection on IR sensor 1 (IR1State != IR1LastState && IR1State == false)
-    //delay() //wait for train to finish passing
-    //lower bridge for x seconds (see how long it takes to lower)
-    //bridgeState = false
+  //delay() //wait for train to finish passing
+  //lower bridge for x seconds (see how long it takes to lower)
+  //bridgeState = false
 
   //Timer
-  if((millis() - previousMillis) > millisDelay){
+  if ((millis() - previousMillis) > millisDelay) {
     previousMillis = millis();
     Serial.println(previousMillis);
 
     //The bridge is raised
-    if(bridgeState != 0){ //flash the lights
+    if (bridgeState != 0) { //flash the lights
       //Railroad Lights
-      if(warningLedState == false){
-        digitalWrite(warningLedPinLeft, HIGH);  
+      if (warningLedState == false) {
+        digitalWrite(warningLedPinLeft, HIGH);
         digitalWrite(warningLedPinRight, LOW);
         Serial.println("Left!");
       }
-      else{
+      else {
         digitalWrite(warningLedPinLeft, LOW);
         digitalWrite(warningLedPinRight, HIGH);
         Serial.println("Right!");
       }
       warningLedState = !warningLedState;
     }
-    
+
     Serial.println("---------");
   }
 }
 
-int getDist(){
-  //This fixes the sensor getting stuck at 0 
-  if(sonar.ping() == 0){
+int getDist() {
+  //This fixes the sensor getting stuck at 0
+  if (sonar.ping() == 0) {
     pinMode(distanceEchoPin, OUTPUT);
     digitalWrite(distanceEchoPin, LOW);
     pinMode(distanceEchoPin, INPUT);
   }
-  
+
   delay(30);
-  
+
   return sonar.ping_cm();
 }
