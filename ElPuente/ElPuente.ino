@@ -12,7 +12,7 @@ unsigned long previousMillis = 0;
 
 //StateTracking
 byte bridgeState = 2; //0=lowered; 1=raising; 2=raised; 3=lowering
-bool warningLedState = false; //true=on
+bool warningLedState = false; //is left on or right on?
 
 //Distance Sensor
 #define distanceThreshold 60 //bridge lowers if less than this (cm)
@@ -22,19 +22,23 @@ NewPing sonar(distanceTrigPin, distanceEchoPin, distanceMax); // NewPing setup o
 //Motor
 #define motorPin1 6
 #define motorPin2 7
-#define enablepin 9
+
+//LIMIT SWITCHES!
+#define limitSwitchTop    10
+#define limitSwitchBottom 9
+
 void setup() {
- 
   //PinModes
   pinMode(warningLedPinLeft, OUTPUT);
   pinMode(warningLedPinRight, OUTPUT);
   pinMode(motorPin1, OUTPUT);
   pinMode(motorPin2, OUTPUT);
-  pinMode(enablepin, OUTPUT);
+  pinMode(limitSwitchTop, OUTPUT);
+  pinMode(limitSwitchBottom, OUTPUT);
   
   //Inital conditons
-  digitalWrite(warningLedPinLeft, HIGH);
-  digitalWrite(warningLedPinRight, HIGH);
+  digitalWrite(warningLedPinLeft, LOW);
+  digitalWrite(warningLedPinRight, LOW);
 
   //Serial init
   Serial.begin(9600);
@@ -42,38 +46,40 @@ void setup() {
 }
 
 void loop() {
+  Serial.print("bridgeState: ");
+  Serial.println(bridgeState);
+  
   //Check distance sensor
   int distance = getDist();
   Serial.print(distance);
   Serial.println(" cm");
+  
   if (distance < distanceThreshold && bridgeState == 0) {
     bridgeState = 1;
+  }
+  if (digitalRead(limitSwitchTop) == HIGH && bridgeState == 1) {
+    bridgeState = 2;
   }
   if (distance > distanceThreshold && bridgeState == 2) {
     bridgeState = 3;
   }
+  if (digitalRead(limitSwitchBottom) == HIGH && bridgeState == 3) {
+    bridgeState = 0;
+  }
 
-  //  if(bridgeState == 0 || bridgeState == 2){
-  //    digitalWrite(motorPin1, LOW);
-  //    digitalWrite(motorPin2, LOW);
-  //  }
-  //  else if(bridgeState == 1){
-  //    digitalWrite(motorPin1, HIGH);
-  //    digitalWrite(motorPin2, LOW);
-  //  }
-  //  else if(bridgeState == 3){
-  //    digitalWrite(motorPin1, LOW);
-  //    digitalWrite(motorPin2, HIGH);
-  //  }
-
-  //if detection on IR sensor 1 (IR1State != IR1LastState && IR1State == true)
-  //raise bridge for x seconds (see how long it takes to raise)
-  //bridgeState = true
-
-  //if detection on IR sensor 1 (IR1State != IR1LastState && IR1State == false)
-  //delay() //wait for train to finish passing
-  //lower bridge for x seconds (see how long it takes to lower)
-  //bridgeState = false
+  //Bridge motor logic
+  if(bridgeState == 0 || bridgeState == 2){
+    digitalWrite(motorPin1, LOW);
+    digitalWrite(motorPin2, LOW);
+  }
+  else if(bridgeState == 1){
+    digitalWrite(motorPin1, HIGH);
+    digitalWrite(motorPin2, LOW);
+  }
+  else if(bridgeState == 3){
+    digitalWrite(motorPin1, LOW);
+    digitalWrite(motorPin2, HIGH);
+  }
 
   //Timer
   if ((millis() - previousMillis) > millisDelay) {
@@ -95,6 +101,10 @@ void loop() {
       }
       warningLedState = !warningLedState;
     }
+    else{
+      digitalWrite(warningLedPinLeft, LOW);
+      digitalWrite(warningLedPinRight, LOW);
+    }
 
     Serial.println("---------");
   }
@@ -110,5 +120,9 @@ int getDist() {
 
   delay(30);
 
-  return sonar.ping_cm();
+  int reading = sonar.ping_cm();
+  if (reading == 0){ //out of range
+    reading = 9999; //really big number far larger than range
+  }
+  return reading;
 }
