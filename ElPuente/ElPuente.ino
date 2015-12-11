@@ -11,18 +11,20 @@
 #define limitSwitchTop     10
 #define distanceEchoPin    11
 #define distanceTrigPin    12
-#define onSwitch           13
+#define fiveVPin           13
 
 //Timer
 int millisDelay = 500;
 unsigned long previousMillis = 0;
+int millisDelayBridge = 2000;
+unsigned long previousMillisBridge = 0;
 
 //StateTracking
 byte bridgeState = 0; //0=lowered; 1=raising; 2=raised; 3=lowering
 bool warningLedState = false; //is left on or right on?
 
 //Distance Sensor
-#define distanceThreshold 80 //bridge lowers if less than this (cm)
+#define distanceThreshold 20 //bridge lowers if less than this (cm)
 #define distanceMax       200  // Maximum distance we want to ping for (in centimeters). Maximum sensor distance is rated at 400-500cm.
 NewPing sonar(distanceTrigPin, distanceEchoPin, distanceMax); // NewPing setup of pins and maximum distance.
 
@@ -35,11 +37,12 @@ void setup() {
   pinMode(limitSwitchTop, OUTPUT);
   pinMode(limitSwitchBottom, OUTPUT);
   //distance sensor pinModes are handled by NewPing
-  pinMode(onSwitch, INPUT);
+  pinMode(fiveVPin, OUTPUT); //I needed +5V on the other side of the board
   
   //Inital conditons
   digitalWrite(warningLedPinLeft, LOW);
   digitalWrite(warningLedPinRight, LOW);
+  digitalWrite(fiveVPin, HIGH);
 
   //Serial init
   Serial.begin(9600);
@@ -47,68 +50,67 @@ void setup() {
 }
 
 void loop() {
-  //Serial.println(digitalRead(onSwitch));
-  if (digitalRead(onSwitch) == HIGH){
-    //Serial.print("bridgeState: ");
-    //Serial.println(bridgeState);
-    
-    //Check distance sensor
-    int distance = getDist();
-    Serial.print(distance);
-    Serial.println(" cm");
-    
-    if (distance < distanceThreshold && bridgeState == 0) {
-      bridgeState = 1;
-    }
-    if (digitalRead(limitSwitchTop) == HIGH && bridgeState == 1) {
-      bridgeState = 2;
-    }
-    if (distance > distanceThreshold && bridgeState == 2) {
+  Serial.print("bridgeState: ");
+  Serial.println(bridgeState);
+  
+  //Check distance sensor
+  int distance = getDist();
+  Serial.print(distance);
+  Serial.println(" cm");
+  
+  if (distance < distanceThreshold && bridgeState == 0) {
+    bridgeState = 1;
+  }
+  if (digitalRead(limitSwitchTop) == HIGH && bridgeState == 1) {
+    bridgeState = 2;
+    previousMillisBridge = millis();
+  }
+  if (bridgeState == 2 && (millis() - previousMillisBridge) > millisDelayBridge) {
+      previousMillisBridge = millis();
       bridgeState = 3;
-    }
-    if (digitalRead(limitSwitchBottom) == HIGH && bridgeState == 3) {
-      delay(200);
-      bridgeState = 0;
-    }
-  
-    //Bridge motor logic
-    if(bridgeState == 0 || bridgeState == 2){
-      motorStop();
-    }
-    else if(bridgeState == 1){
-      motorRaise();
-    }
-    else if(bridgeState == 3){
-      motorLower();
-    }
-  
-    //Timer
-    if ((millis() - previousMillis) > millisDelay) {
-      previousMillis = millis();
-      Serial.println(previousMillis);
-  
-      //The bridge is raised
-      if (bridgeState != 0) { //flash the lights
-        //Railroad Lights
-        if (warningLedState == false) {
-          digitalWrite(warningLedPinLeft, HIGH);
-          digitalWrite(warningLedPinRight, LOW);
-          Serial.println("Left!");
-        }
-        else {
-          digitalWrite(warningLedPinLeft, LOW);
-          digitalWrite(warningLedPinRight, HIGH);
-          Serial.println("Right!");
-        }
-        warningLedState = !warningLedState;
-      }
-      else{
-        digitalWrite(warningLedPinLeft, LOW);
+  }
+  if (digitalRead(limitSwitchBottom) == HIGH && bridgeState == 3) {
+    //delay(200);
+    bridgeState = 0;
+  }
+
+  //Bridge motor logic
+  if(bridgeState == 0 || bridgeState == 2){
+    motorStop();
+  }
+  else if(bridgeState == 1){
+    motorRaise();
+  }
+  else if(bridgeState == 3){
+    motorLower();
+  }
+
+  //Timer
+  if ((millis() - previousMillis) > millisDelay) {
+    previousMillis = millis();
+    Serial.println(previousMillis);
+
+    //The bridge is raised
+    if (bridgeState != 0) { //flash the lights
+      //Railroad Lights
+      if (warningLedState == false) {
+        digitalWrite(warningLedPinLeft, HIGH);
         digitalWrite(warningLedPinRight, LOW);
+        Serial.println("Left!");
       }
-  
-      Serial.println("---------");
+      else {
+        digitalWrite(warningLedPinLeft, LOW);
+        digitalWrite(warningLedPinRight, HIGH);
+        Serial.println("Right!");
+      }
+      warningLedState = !warningLedState;
     }
+    else{
+      digitalWrite(warningLedPinLeft, LOW);
+      digitalWrite(warningLedPinRight, LOW);
+    }
+
+    Serial.println("---------");
   }
 }
 
